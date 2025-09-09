@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 void main() {
   runApp(const MyApp());
@@ -25,13 +27,45 @@ class WeatherHomePage extends StatefulWidget {
 }
 
 class _WeatherHomePageState extends State<WeatherHomePage> {
-  // Platzhalter für die Wetterdaten. Später wird hier der Wert von der API gespeichert.
   String _weatherData = "Keine Daten geladen.";
+
+  Future<void> _fetchWeather() async {
+    const latitude = 50.92;
+    const longitude = 11.58;
+    final url = Uri.parse(
+      'https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current_weather=true',
+    );
+
+    try {
+      // Warten auf die Antwort der API
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        // Parsen JSON
+        final jsonData = jsonDecode(response.body);
+        final temperature = jsonData['current_weather']['temperature'];
+
+        // Aktualisieren Temperatur
+        setState(() {
+          _weatherData = '$temperature °C';
+        });
+      } else {
+        // Bei Fehlern
+        setState(() {
+          _weatherData = 'Fehler beim Laden der Daten.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _weatherData = 'Netzwerkfehler: $e';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Wetter-App für Jena')),
+      appBar: AppBar(title: const Text('Wetter in Jena')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -43,10 +77,7 @@ class _WeatherHomePageState extends State<WeatherHomePage> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                // TODO: Hier wird später die API-Anfrage eingebaut
-                print("Button wurde gedrückt!");
-              },
+              onPressed: _fetchWeather,
               child: const Text('Wetter laden'),
             ),
           ],
